@@ -1,6 +1,6 @@
 resource "aws_eks_cluster" "example" {
   name     = "my-cluster"
-  role_arn = "arn:aws:iam::992382474736:role/my-cluster-cluster-20240924235255190800000002"
+  role_arn = "arn:aws:iam::992382474736:user/kk_labs_user_640152"
 
   vpc_config {
     subnet_ids = [aws_subnet.private_subnet.id, aws_subnet.public_subnet.id]
