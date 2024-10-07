@@ -42,7 +42,7 @@ resource "aws_security_group" "allow_ssh" {
 }
 
 resource "aws_instance" "k8s_instance" {
-  ami           = "ami-0c55b159cbfafe1fe"  # AMI de Amazon Linux 2; cambia según la región
+  ami           = "ami-00f251754ac5da7f0"  # AMI de Amazon Linux 2; cambia según la región
   instance_type = "t2.micro"               # Cambia el tipo de instancia si es necesario
   subnet_id     = aws_subnet.my_subnet.id
   security_groups = [aws_security_group.allow_ssh.name]
