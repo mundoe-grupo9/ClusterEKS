@@ -1,90 +1,20 @@
-# EKS Cluster
-resource "aws_eks_cluster" "main" {
-  name     = var.cluster_name
-  version  = var.cluster_version
-  role_arn = aws_iam_role.eks_cluster_role.arn
+    resource "aws_eks_cluster" "example" {
+    name     = "my-cluster"
+    role_arn = "arn:aws:iam::992382474736:role/my-cluster-cluster-20240924235255190800000002"
 
-  vpc_config {
-    subnet_ids = [aws_subnet.public.id, aws_subnet.private.id]
-    security_group_ids = [aws_security_group.eks_cluster.id]
-  }
+    vpc_config {
+        subnet_ids = [aws_subnet.private_subnet.id, aws_subnet.public_subnet.id]
+    }
 
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_cluster_policy
-  ]
-}
+    # Ensure that IAM Role permissions are created before and deleted after EKS Cluster handling.
+    # Otherwise, EKS will not be able to properly delete EKS managed EC2 infrastructure such as Security Groups.
+    
+    }
 
-# EKS Node Group
-resource "aws_eks_node_group" "main" {
-  cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "${var.cluster_name}-node-group"
-  node_role_arn   = aws_iam_role.eks_node_role.arn
-  subnet_ids      = [aws_subnet.private.id]
+    output "endpoint" {
+    value = aws_eks_cluster.example.endpoint
+    }
 
-  scaling_config {
-    desired_size = var.eks_node_group_desired_size
-    max_size     = var.eks_node_group_max_size
-    min_size     = var.eks_node_group_min_size
-  }
-
-  instance_types = var.eks_node_group_instance_types
-
-  depends_on = [
-    aws_iam_role_policy_attachment.eks_node_policy,
-    aws_iam_role_policy_attachment.eks_cni_policy,
-    aws_iam_role_policy_attachment.eks_container_registry
-  ]
-
-  
-}
-# Rol para el cluster EKS
-resource "aws_iam_role" "eks_cluster_role" {
-  name = "${var.cluster_name}-cluster-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "eks.amazonaws.com"
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "eks_cluster_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.eks_cluster_role.name
-}
-
-# Rol para los nodos de EKS
-resource "aws_iam_role" "eks_node_role" {
-  name = "${var.cluster_name}-node-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "eks_node_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-  role       = aws_iam_role.eks_node_role.name
-}
-
-resource "aws_iam_role_policy_attachment" "eks_cni_policy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-  role       = aws_iam_role.eks_node_role.name
-}
-
-resource "aws_iam_role_policy_attachment" "eks_container_registry" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-  role       = aws_iam_role.eks_node_role.name
-}
+    #output "kubeconfig-certificate-authority-data" {
+    # value = aws_eks_cluster.example.certificate_authority[0].data
+    #}
