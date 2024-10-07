@@ -1,6 +1,7 @@
     resource "aws_eks_cluster" "example" {
     name     = "my-cluster"
-    role_arn = "arn:aws:iam::992382474736:role/my-cluster-cluster-20240924235255190800000002"
+    #role_arn = "arn:aws:iam::992382474736:role/my-cluster-cluster-20240924235255190800000002"
+    role_arn = "arn:aws:iam::aws:policy/service-role/AmazonEKSClusterPolicy"
 
     vpc_config {
         subnet_ids = [aws_subnet.private_subnet.id, aws_subnet.public_subnet.id]
@@ -13,6 +14,8 @@
 
     output "endpoint" {
     value = aws_eks_cluster.example.endpoint
+
+    
     }
 
     #output "kubeconfig-certificate-authority-data" {
