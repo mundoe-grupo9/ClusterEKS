@@ -12,6 +12,12 @@ resource "aws_vpc" "my_vpc" {
   }
 }
 
+variable "public_ip" {
+  description = "Your public IP address"
+  type        = string
+}
+
+
 resource "aws_security_group" "my_sg" {
   name   = "terraform-tcp-security-group"
   vpc_id = aws_vpc.my_vpc.id
@@ -34,7 +40,7 @@ resource "aws_security_group" "my_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["${var.PUBLIC_IP}/32"]
+    cidr_blocks = ["${var.public_ip}/32"]  # Usando la variable
   }
 
   egress {
@@ -44,6 +50,7 @@ resource "aws_security_group" "my_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 
 resource "aws_instance" "k8s_instance" {
   ami           = "ami-0c55b159cbfafe1f0" # Reemplaza con la AMI adecuada para tu región
