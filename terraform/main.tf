@@ -1,32 +1,56 @@
 provider "aws" {
-  region = "us-west-1"  # Cambia esto a tu región preferida
+  region = var.REGION
 }
 
-resource "aws_vpc" "my_vpc" {
-  cidr_block = "10.0.0.0/16"
+resource "aws_instance" "k8s_instance" {
+  ami           = "ami-0c55b159cbfafe1f0" # Reemplaza con la AMI adecuada para tu región
+  instance_type = "t3.medium"
+  key_name      = var.key_name
 
+  vpc_security_group_ids = [aws_security_group.my_sg.id]
+  
   tags = {
-    Name = "my_vpc"
+    Name = "K8sInstance"
   }
+
+  # User data para instalar Docker y Kubernetes
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update -y
+              apt-get install -y docker.io
+              systemctl start docker
+              systemctl enable docker
+              curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+              echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" >> /etc/apt/sources.list
+              apt-get update
+              apt-get install -y kubelet kubeadm kubectl
+              systemctl enable kubelet
+              EOF
 }
 
-resource "aws_subnet" "my_subnet" {
-  vpc_id     = aws_vpc.my_vpc.id
-  cidr_block = "10.0.1.0/24"
-
-  tags = {
-    Name = "my_subnet"
-  }
-}
-
-resource "aws_security_group" "allow_ssh" {
+resource "aws_security_group" "my_sg" {
+  name   = "terraform-tcp-security-group"
   vpc_id = aws_vpc.my_vpc.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # Cambia esto para restringir el acceso a tu IP
+    cidr_blocks = ["${var.PUBLIC_IP}/32"]
   }
 
   egress {
@@ -35,33 +59,4 @@ resource "aws_security_group" "allow_ssh" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
-  tags = {
-    Name = "allow_ssh"
-  }
-}
-
-resource "aws_instance" "k8s_instance" {
-  ami           = "ami-00f251754ac5da7f0"  # AMI de Amazon Linux 2; cambia según la región
-  instance_type = "t2.micro"               # Cambia el tipo de instancia si es necesario
-  subnet_id     = aws_subnet.my_subnet.id
-  security_groups = [aws_security_group.allow_ssh.name]
-
-  user_data = <<-EOF
-              #!/bin/bash
-              # Instalar Docker
-              sudo yum update -y
-              sudo amazon-linux-extras install docker -y
-              sudo service docker start
-              sudo usermod -a -G docker ec2-user
-
-              # Iniciar contenedores automáticamente
-              sudo docker run -d --name nginx-container -p 80:80 nginx
-              sudo docker run -d --name httpd-container -p 8080:80 httpd
-              sudo docker run -d --name redis-container -p 6379:6379 redis
-              EOF
-}
-
-output "instance_public_ip" {
-  value = aws_instance.k8s_instance.public_ip
 }
